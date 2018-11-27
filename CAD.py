@@ -5,12 +5,12 @@ from __future__ import print_function
 # import tensorflow as tf
 #import tf.nn as F
 #import torch.optim as optim
-
+import model
 #from torch.autograd import Variable
 import os
 import math
 import data_loader
-import ResNet as models
+#import ResNet as models
 from torch.utils import model_zoo
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
@@ -80,19 +80,20 @@ def train(epoch, model):
             data_target = data_target.cuda()
         data_source, label_source = Variable(data_source), Variable(label_source)
         data_target = Variable(data_target)
-
-        optimizer.zero_grad()
+        # zero the parameter gradient
+        # optimizer.zero_grad()  #Tensorflow already have it zero as default
         label_source_pred, loss_mmd = model(data_source, data_target)
-        loss_cls = F.nll_loss(F.log_softmax(label_source_pred, dim=1), label_source)
+        loss_cls = tf.losses.sparse_softmax_cross_entropy(label_source_pred, dim=1), label_source)
         gamma = 2 / (1 + math.exp(-10 * (epoch) / epochs)) - 1
         loss = loss_cls + gamma * loss_mmd
-        loss.backward()
-        optimizer.step()
+        
+       
         if i % log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tsoft_Loss: {:.6f}\tmmd_Loss: {:.6f}'.format(
                 epoch, i * len(data_source), len_source_dataset,
-                100. * i / len_source_loader, loss.data[0], loss_cls.data[0], loss_mmd.data[0]))
-
+                100. * i / len_source_loader, loss.data[0], loss_cls.data[0], loss_mmd.data[0])
+            
+            
 def test(model):
     model.eval()
     test_loss = 0
@@ -103,10 +104,11 @@ def test(model):
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data, volatile=True), Variable(target)
         s_output, t_output = model(data, data)
-        test_loss += F.nll_loss(F.log_softmax(s_output, dim = 1), target, size_average=False).data[0] # sum up batch loss
+        test_loss += tf.nn.sparse_softmax_cross_entropy_with_logits((s_output, dim = 1), target, size_average=False).data[0] # sum up batch loss
         pred = s_output.data.max(1)[1] # get the index of the max log-probability
         correct += pred.eq(target.data.view_as(pred)).cpu().sum()
-
+                  
+                  
     test_loss /= len_target_dataset
     print('\n{} set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
         target_name, test_loss, correct, len_target_dataset,
@@ -115,7 +117,7 @@ def test(model):
 
 
 if __name__ == '__main__':
-    model = models.DANNet(num_classes=31)
+    model = models.model(num_classes=31)
     correct = 0
     print(model)
     if cuda:
