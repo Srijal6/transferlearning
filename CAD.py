@@ -121,7 +121,7 @@ if __name__ == '__main__':
     correct = 0
     print(model)
     if cuda:
-        model.device()
+        model.device()  #tf.matmul(model)
     model = load_pretrain(model)
     for epoch in range(1, epochs + 1):
         train(epoch, model)
