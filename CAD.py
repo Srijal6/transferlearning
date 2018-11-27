@@ -31,7 +31,7 @@ cuda = not no_cuda and tf.test.is_gpu_available()
 
 tf.random.set_random_seed(seed)
 if cuda:
-    tf.device(seed)
+    tf.device(seed)  #tf.matmul(seed)
 
 kwargs = {'num_workers': 1, 'pin_memory': True} if cuda else {}
 
@@ -76,8 +76,8 @@ def train(epoch, model):
         if i % len_target_loader == 0:
             iter_target = iter(target_train_loader)
         if cuda:
-            data_source, label_source = data_source.cuda(), label_source.cuda()
-            data_target = data_target.cuda()
+            data_source, label_source = data_source.cuda(), label_source.cuda() # tf.matmul(data_source) 
+            data_target = data_target.cuda() #tf.matmul(data_target)
         data_source, label_source = Variable(data_source), Variable(label_source)
         data_target = Variable(data_target)
         # zero the parameter gradient
@@ -101,11 +101,11 @@ def test(model):
 
     for data, target in target_test_loader:
         if cuda:
-            data, target = data.device(), target.device()
+            data, target = tf.matmul(data), tf.matmul(target) #data.device
         data, target = Variable(data, volatile=True), Variable(target)
         s_output, t_output = model(data, data)
         test_loss += tf.nn.sparse_softmax_cross_entropy_with_logits((s_output, dim = 1), target, size_average=False).data[0] # sum up batch loss
-        pred = s_output.data.max(1)[1] # get the index of the max log-probability
+        pred = tf.math.log(s_output(1)[1]) # get the index of the max log-probability
         correct += pred.eq(target.data.view_as(pred)).cpu().sum()
                   
                   
