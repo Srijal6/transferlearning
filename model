@@ -89,7 +89,8 @@ def cnn_model_fn(features, labels, mode):
         labels=labels, predictions=predictions["classes"])}
         return tf.estimator.EstimatorSpec(
             mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
-#After building a model you should train and evaluate and also predict the output. in the main fun(), here is the steps of doing it:
+
+#After building a model you should load training and eval data to show in the UI. in the main fun(), here is the steps of doing it:
 
 def main(unused_argv):
 #1) Load training and eval data
@@ -130,5 +131,5 @@ def main(unused_argv):
     eval_results = mnist_classifier.evaluate(input_fn=eval_input_fn)
     print(eval_results)    
 
-#6) 
+
        
