@@ -45,7 +45,7 @@ len_source_loader = len(source_loader)
 len_target_loader = len(target_train_loader)
 
 def load_pretrain(model):
-    saver = tf.train.import_meta_graph('my_test_model-1000.meta')
+   # saver = tf.train.import_meta_graph('my_test_model-1000.meta')
     #https://cv-tricks.com/tensorflow-tutorial/save-restore-tensorflow-models-quick-complete-tutorial/
     #have to add my trained model
     with tf.Session() as sess:
@@ -65,7 +65,7 @@ def train(epoch, model):
         {'params': model.cls_fc.parameters(), 'lr': LEARNING_RATE},
         ], lr=LEARNING_RATE / 10, momentum=momentum, weight_decay=l2_decay)
 
-    model.train()
+    tf.train()
 
     iter_source = iter(source_loader)
     iter_target = iter(target_train_loader)
@@ -95,13 +95,13 @@ def train(epoch, model):
             
             
 def test(model):
-    model.eval()
+    tf.estimator.Estimator()   #is it correct
     test_loss = 0
     correct = 0
 
     for data, target in target_test_loader:
         if cuda:
-            data, target = data.cuda(), target.cuda()
+            data, target = data.device(), target.device()
         data, target = Variable(data, volatile=True), Variable(target)
         s_output, t_output = model(data, data)
         test_loss += tf.nn.sparse_softmax_cross_entropy_with_logits((s_output, dim = 1), target, size_average=False).data[0] # sum up batch loss
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     correct = 0
     print(model)
     if cuda:
-        model.cuda()
+        model.device()
     model = load_pretrain(model)
     for epoch in range(1, epochs + 1):
         train(epoch, model)
