@@ -1,14 +1,14 @@
 from __future__ import print_function
 import argparse
-import torch
-import torch.nn.functional as F
-import torch.optim as optim
-from torch.autograd import Variable
+#import torch
+#import torch.nn.functional as F
+#import torch.optim as optim
+#from torch.autograd import Variable
 import os
 import math
 import data_loader
 import ResNet as models
-from torch.utils import model_zoo
+from tf.utils import model_zoo
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 import tensorflow as tf
@@ -45,22 +45,24 @@ len_target_loader = len(target_train_loader)
 
     def load_pretrain(model):
         dir = 'example'
-        pretrained_dict = model_zoo.load_url(dir)
+        pretrained_dict = tf.loadmodel_zoo.load_url(dir)
     model_dict = model.state_dict()
     for k, v in model_dict.items():
         if not "cls_fc" in k:
             model_dict[k] = pretrained_dict[k[k.find(".") + 1:]]
     model.load_state_dict(model_dict)
-    return model
+
 
 def train(epoch, model):
     LEARNING_RATE = lr / tf.math.pow((1 + 10 * (epoch - 1) / epochs), 0.75)
     print('learning rate{: .4f}'.format(LEARNING_RATE))
-    optimizer = tf.train.GradientDescentOptimizer([
-        {'params': model.sharedNet.parameters()},
-        {'params': model.cls_fc.parameters(), 'lr': LEARNING_RATE}
-        ], lr)
 
+    optimizer = tf.train.AdamOptimizer(lr,[
+       {'params': model.sharedNet.parameters()},
+       {'params': model.cls_fc.parameters(), 'lr': LEARNING_RATE}
+        ] )
+    
+    #return(model)
    # model.train()
 
  with tf.Session() as sess:
@@ -80,17 +82,17 @@ def train(epoch, model):
          data_target = Variable(data_target)
          sess.run(optimizer, feed_dict={x: data_source, y: label_source, keep_prob: 0.7})
 
-        optimizer.zero_grad()
-        label_source_pred, loss_mmd = model(data_source, data_target)
-        loss_cls = F.nll_loss(F.log_softmax(label_source_pred, dim=1), label_source)
-        gamma = 2 / (1 + math.exp(-10 * (epoch) / epochs)) - 1
-        loss = loss_cls + gamma * loss_mmd
-        loss.backward()
-        optimizer.step()
-        if i % log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tsoft_Loss: {:.6f}\tmmd_Loss: {:.6f}'.format(
-                epoch, i * len(data_source), len_source_dataset,
-                100. * i / len_source_loader, loss.data[0], loss_cls.data[0], loss_mmd.data[0]))
+       # optimizer.zero_grad()
+          label_source_pred, loss_mmd = model(data_source, data_target)
+          loss_cls = F.nll_loss(tf.nn.log_softmax(label_source_pred, dim=1), label_source)
+          gamma = 2 / (1 + tf.math.exp(-10 * (epoch) / epochs)) - 1
+          loss = loss_cls + gamma * loss_mmd
+        #loss.backward()
+        #optimizer.step()
+          if i % log_interval == 0:
+              print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tsoft_Loss: {:.6f}\tmmd_Loss: {:.6f}'.format(
+              epoch, i * len(data_source), len_source_dataset,
+                   100. * i / len_source_loader, loss.data[0], loss_cls.data[0], loss_mmd.data[0]))
 
     # with tf.Session() as sess:
     #    sess.run(tf.stack((model[:,0] + 1, x[:, 1]), axis=1))
@@ -121,6 +123,7 @@ if __name__ == '__main__':
     print(model)
     if cuda:
         model.cuda()
+
     model = load_pretrain(model)
     for epoch in range(1, epochs + 1):
         train(epoch, model)
