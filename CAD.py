@@ -43,10 +43,10 @@ len_target_dataset = len(target_test_loader.dataset)
 len_source_loader = len(source_loader)
 len_target_loader = len(target_train_loader)
 
-    def load_pretrain(model):
-        dir = 'example'
-        pretrained_dict = tf.loadmodel_zoo.load_url(dir)
-    model_dict = model.state_dict()
+def load_pretrain(model):
+    dir = 'http://download.tensorflow.org/models/resnet_v1_101_2016_08_28.tar.gz'
+    pretrained_dict = tf.loadmodel(dir)
+    model_dict = tf.train.saver()
     for k, v in model_dict.items():
         if not "cls_fc" in k:
             model_dict[k] = pretrained_dict[k[k.find(".") + 1:]]
@@ -56,7 +56,8 @@ len_target_loader = len(target_train_loader)
 def train(epoch, model):
     LEARNING_RATE = lr / tf.math.pow((1 + 10 * (epoch - 1) / epochs), 0.75)
     print('learning rate{: .4f}'.format(LEARNING_RATE))
-
+    opt = tf.train.AdamOptimizer()
+    train_op = opt.minimize(loss_op, var_list=[fc8W, fc8b])
     optimizer = tf.train.AdamOptimizer(lr,[
        {'params': model.sharedNet.parameters()},
        {'params': model.cls_fc.parameters(), 'lr': LEARNING_RATE}
