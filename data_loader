@@ -1,0 +1,19 @@
+#from torchvision import datasets, transforms
+#import torch
+import tensorflow as tf
+import datasets
+
+
+def load_training(root_path, dir, batch_size, kwargs):
+    transform = tf.image.resize_images(
+        image,[256, 256])
+    data = datasets.ImageFolder(root=root_path + dir, transform=transform)
+    train_loader = tf.train.batch(data, batch_size=batch_size, shuffle=True, drop_last=True, **kwargs)
+    return train_loader
+
+def load_testing(root_path, dir, kwargs):
+    transform = tf.image.resize_images(
+        image, [224, 224])
+    data = datasets.ImageFolder(root=root_path + dir, transform=transform)
+    test_loader = tf.data.TFRecordDataset(data **kwargs)
+    return test_loader
