@@ -14,6 +14,6 @@ def load_training(root_path, dir, batch_size, kwargs):
 def load_testing(root_path, dir, kwargs):
     transform = tf.image.resize_images(
         image, [224, 224])
-    data = datasets.ImageFolder(root=root_path + dir, transform=transform)
+    data = tf.contrib.data.make_csv_dataset(CSV_PATH, batch_size=32)    
     test_loader = tf.data.TFRecordDataset(data **kwargs)
     return test_loader
