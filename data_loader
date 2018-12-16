@@ -7,7 +7,7 @@ import datasets
 def load_training(root_path, dir, batch_size, kwargs):
     transform = tf.image.resize_images(
         image,[256, 256])
-    data = datasets.ImageFolder(root=root_path + dir, transform=transform)
+    data = tf.contrib.data.make_csv_dataset(CSV_PATH, batch_size=32)
     train_loader = tf.train.batch(data, batch_size=batch_size, shuffle=True, drop_last=True, **kwargs)
     return train_loader
 
