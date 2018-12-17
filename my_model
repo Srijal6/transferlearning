@@ -83,7 +83,7 @@ def cnn(features, labels, mode):
   if mode == tf.estimator.ModeKeys.PREDICT:
     return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
 
-  # Calculate Loss (for both TRAIN and EVAL modes)
+  # Calculate Loss (for both TRAIN and test modes)
   loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
 
   # Configure the Training Op (for TRAIN mode)
@@ -94,12 +94,12 @@ def cnn(features, labels, mode):
         global_step=tf.train.get_global_step())
     return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
 
-  # Add evaluation metrics (for EVAL mode)
-  eval_metric_ops = {
+  # Add evaluation metrics (for Test mode)
+  test_metric_ops = {
       "accuracy": tf.metrics.accuracy(
           labels=labels, predictions=predictions["classes"])}
   return tf.estimator.EstimatorSpec(
-      mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
+      mode=mode, loss=loss, eval_metric_ops=test_metric_ops)
 
 
 def main(unused_argv):
@@ -107,8 +107,9 @@ def main(unused_argv):
   mnist = tf.contrib.learn.datasets.load_dataset("mnist")
   train_data = mnist.train.images  # Returns np.array
   train_labels = np.asarray(mnist.train.labels, dtype=np.int32)
-  eval_data = mnist.test.images  # Returns np.array
-  eval_labels = np.asarray(mnist.test.labels, dtype=np.int32)
+  test_data = mnist.test.images  # Returns np.array
+  test_labels = np.asarray(mnist.test.labels, dtype=np.int32)
+
 
   # Create the Estimator
   mnist_classifier = tf.estimator.Estimator(
@@ -132,16 +133,40 @@ def main(unused_argv):
       steps=20000,
       hooks=[logging_hook])
 
-  # Evaluate the model and print results
-  eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-      x={"x": eval_data},
-      y=eval_labels,
+  # test the model and print results
+  test_input_fn = tf.estimator.inputs.numpy_input_fn(
+      x={"x": test_data},
+      y=test_labels,
       num_epochs=1,
       shuffle=False)
-  eval_results = mnist_classifier.evaluate(input_fn=eval_input_fn)
-  print(eval_results)
+  test_results = mnist_classifier.evaluate(input_fn=test_input_fn)
+  print(test_results)
 
   saver = tf.train.Saver()
+
+  with tf.Session() as sess:
+      sess.run(init_op)
+      # Do some work with the model.
+      inc_v1.op.run()
+      dec_v2.op.run()
+      # Save the variables to disk.
+      save_path = saver.save(sess, "/tmp/model.ckpt")
+      print("Model saved in path: %s" % save_path)
+
+  with tf.Session() as sess:
+      sess.run(tf.global_variables_initializer())
+      # initialise iterator with train data
+      sess.run(iter.initializer, feed_dict={x: train_data[0], y: train_data[1], batch_size: BATCH_SIZE})
+      print('Training...')
+      for i in range(EPOCHS):
+          tot_loss = 0
+          for _ in range(n_batches):
+              _, loss_value = sess.run([train_op, loss])
+              tot_loss += loss_value
+          print("Iter: {}, Loss: {:.4f}".format(i, tot_loss / n_batches))
+      # initialise iterator with test data
+      sess.run(iter.initializer, feed_dict={x: test_data[0], y: test_data[1], batch_size: test_data[0].shape[0]})
+      print('Test Loss: {:4f}'.format(sess.run(loss)))
 
 if __name__ == "__main__":
   tf.app.run()
