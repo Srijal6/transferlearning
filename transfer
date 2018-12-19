@@ -1,0 +1,124 @@
+# import pickle
+import time
+import tensorflow as tf
+# from sklearn.model_selection import train_test_split
+# from sklearn.utils import shuffle
+from my_model import cnn_model_fn
+import numpy as np
+
+# from alexnet.alexnet_model import AlexNet
+
+nb_classes = 30
+epochs = 10
+batch_size = 128
+
+mnist = tf.contrib.learn.datasets.load_dataset("mnist")
+train_data = mnist.train.images  # Returns np.array
+train_labels = np.asarray(mnist.train.labels, dtype=np.int32)
+test_data = mnist.test.images  # Returns np.array
+test_labels = np.asarray(mnist.test.labels, dtype=np.int32)
+
+# with open('/tmp/transfer_learning_data/train.p', 'rb') as f:
+#     data = pickle.load(f)
+def retrain():
+
+    # tf.reset_default_graph()
+    # Add ops to save and restore all the variables.
+    saver = tf.train.Saver()
+    # Later, launch the model, use the saver to restore variables from disk, and
+    # do some work with the model.
+    with tf.Session() as sess:
+        # Restore variables from disk.
+        saver.restore(sess, "/tmp/model.ckpt")
+        print("Model restored.")
+
+# def train():
+#train_input_fn, X_val, test_input_fn, y_val = cnn_model_fn(data['features'], data['labels'], test_size=0.33, random_state=0)
+
+features = tf.placeholder(tf.float32, (None, 32, 32, 3))
+labels = tf.placeholder(tf.int64, None)
+resized = tf.image.resize_images(features, (227, 227))
+
+    # Returns the second final layer of the cnn model,
+    # this allows us to redo the last layer for the traffic signs
+    # model.
+fc1 = cnn_model_fn(resized, feature_extract=True)
+fc1 = tf.stop_gradient(fc1)
+shape = (fc1.get_shape().as_list()[-1], nb_classes)
+fc2W = tf.Variable(tf.truncated_normal(shape, stddev=5e-4))
+fc2b = tf.Variable(tf.zeros(nb_classes))
+logits = tf.nn.xw_plus_b(fc1, fc2W, fc2b)
+
+cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits)
+gamma = 2 / (1 + math.exp(-10 * (epoch) / epochs)) - 1
+loss_op = tf.reduce_mean(cross_entropy)
+loss = loss_op + gamma * loss_mmd
+opt = tf.train.AdamOptimizer()
+train_op = opt.minimize(loss_op, var_list=[fc2W, fc2b])
+init_op = tf.global_variables_initializer()
+
+preds = tf.argmax(logits, 1)
+accuracy_op = tf.reduce_mean(tf.cast(tf.equal(preds, labels), tf.float32))
+
+
+def main(unused_argv ):
+  # Load training and eval data
+
+
+
+  # Create the Estimator
+  mnist_classifier = tf.estimator.Estimator(
+      model_fn=cnn_model_fn, model_dir="/tmp/mnist_convnet_model")
+
+  # Set up logging for predictions
+  # Log the values in the "Softmax" tensor with label "probabilities"
+  tensors_to_log = {"probabilities": "softmax_tensor"}
+  logging_hook = tf.train.LoggingTensorHook(
+      tensors=tensors_to_log, every_n_iter=50)
+
+  # Train the model
+  train_input_fn = tf.estimator.inputs.numpy_input_fn(
+      x={"x": train_data},
+      y=train_labels,
+      batch_size=100,
+      num_epochs=None,
+      shuffle=True)
+  mnist_classifier.train(
+      input_fn=train_input_fn,
+      steps=20000,
+      hooks=[logging_hook])
+
+  # test the model and print results
+  test_input_fn = tf.estimator.inputs.numpy_input_fn(
+      x={"x": test_data},
+      y=test_labels,
+      num_epochs=1,
+      shuffle=False)
+  test_results = mnist_classifier.evaluate(input_fn=test_input_fn)
+  print(test_results)
+
+  saver = tf.train.Saver()
+
+  with tf.Session() as sess:
+      sess.run(init_op)
+      # Do some work with the model.
+      inc_v1.op.run()
+      dec_v2.op.run()
+      # Save the variables to disk.
+      save_path = saver.save(sess, "/tmp/model.ckpt")
+      print("Model saved in path: %s" % save_path)
+
+  with tf.Session() as sess:
+      sess.run(tf.global_variables_initializer())
+      # initialise iterator with train data
+      sess.run(iter.initializer, feed_dict={x: train_data[0], y: train_data[1], batch_size: BATCH_SIZE})
+      print('Training...')
+      for i in range(EPOCHS):
+          tot_loss = 0
+          for _ in range(n_batches):
+              _, loss_value = sess.run([train_op, loss])
+              tot_loss += loss_value
+          print("Iter: {}, Loss: {:.4f}".format(i, tot_loss / n_batches))
+      # initialise iterator with test data
+      sess.run(iter.initializer, feed_dict={x: test_data[0], y: test_data[1], batch_size: test_data[0].shape[0]})
+      print('Test Loss: {:4f}'.format(sess.run(loss)))
