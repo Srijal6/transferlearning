@@ -42,7 +42,7 @@ resized = tf.image.resize_images(features, (227, 227))
     # Returns the second final layer of the cnn model,
     # this allows us to redo the last layer for the traffic signs
     # model.
-fc1 = cnn_model_fn(resized, feature_extract=True)
+fc1 = cnn_model_fn(resized, labels, features, feature_extract=True)
 fc1 = tf.stop_gradient(fc1)
 shape = (fc1.get_shape().as_list()[-1], nb_classes)
 fc2W = tf.Variable(tf.truncated_normal(shape, stddev=5e-4))
