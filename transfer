@@ -43,6 +43,7 @@ resized = tf.image.resize_images(features, (227, 227))
     # this allows us to redo the last layer for the traffic signs
     # model.
 fc1 = cnn_model_fn(resized, labels, features, feature_extract=True)
+fc1 = tf.reshape(-1,3136)
 fc1 = tf.stop_gradient(fc1)
 shape = (fc1.get_shape().as_list()[-1], nb_classes)
 fc2W = tf.Variable(tf.truncated_normal(shape, stddev=5e-4))
@@ -50,9 +51,10 @@ fc2b = tf.Variable(tf.zeros(nb_classes))
 logits = tf.nn.xw_plus_b(fc1, fc2W, fc2b)
 
 cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits)
-gamma = 2 / (1 + math.exp(-10 * (epoch) / epochs)) - 1
+
+#gamma = 2 / (1 + math.exp(-10 * (epoch) / epochs)) - 1
 loss_op = tf.reduce_mean(cross_entropy)
-loss = loss_op + gamma * loss_mmd
+loss = loss_op #+ gamma * loss_mmd
 opt = tf.train.AdamOptimizer()
 train_op = opt.minimize(loss_op, var_list=[fc2W, fc2b])
 init_op = tf.global_variables_initializer()
