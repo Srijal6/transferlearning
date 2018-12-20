@@ -5,7 +5,7 @@ import tensorflow as tf
 # from sklearn.utils import shuffle
 from my_model import cnn_model_fn
 import numpy as np
-
+import math
 # from alexnet.alexnet_model import AlexNet
 
 nb_classes = 30
