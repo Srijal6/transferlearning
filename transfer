@@ -1,9 +1,8 @@
-# import pickle
 import time
 import tensorflow as tf
 # from sklearn.model_selection import train_test_split
 # from sklearn.utils import shuffle
-from my_model import cnn_model_fn
+from new_model import cnn_model_fn
 import numpy as np
 import math
 # from alexnet.alexnet_model import AlexNet
@@ -12,12 +11,16 @@ nb_classes = 30
 epochs = 10
 batch_size = 128
 
+old_v = tf.logging.get_verbosity()
+tf.logging.set_verbosity(tf.logging.ERROR)
+
 mnist = tf.contrib.learn.datasets.load_dataset("mnist")
 train_data = mnist.train.images  # Returns np.array
 train_labels = np.asarray(mnist.train.labels, dtype=np.int32)
 test_data = mnist.test.images  # Returns np.array
 test_labels = np.asarray(mnist.test.labels, dtype=np.int32)
 
+tf.logging.set_verbosity(old_v)
 # with open('/tmp/transfer_learning_data/train.p', 'rb') as f:
 #     data = pickle.load(f)
 def retrain():
@@ -43,7 +46,7 @@ resized = tf.image.resize_images(features, (227, 227))
     # this allows us to redo the last layer for the traffic signs
     # model.
 fc1 = cnn_model_fn(resized, labels, features, feature_extract=True)
-fc1 = tf.reshape(-1,3136)
+#fc1 = tf.reshape(-1,3136)
 fc1 = tf.stop_gradient(fc1)
 shape = (fc1.get_shape().as_list()[-1], nb_classes)
 fc2W = tf.Variable(tf.truncated_normal(shape, stddev=5e-4))
@@ -63,7 +66,7 @@ preds = tf.argmax(logits, 1)
 accuracy_op = tf.reduce_mean(tf.cast(tf.equal(preds, labels), tf.float32))
 
 
-def main(unused_argv ):
+def main():
   # Load training and eval data
 
 
