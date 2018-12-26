@@ -1,12 +1,25 @@
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
+import numpy as np
+import MNIST_data
 
-mnist = input_data.read_data_sets("D:\BaiDu\MNIST_data", one_hot=True)
+# tf.logging.set_verbosity(tf.logging.INFO)
+mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
+# # mnist = tf.contrib.learn.datasets.load_dataset("mnist")
+# train_data = mnist.train.images  # Returns np.array
+# train_labels = np.asarray(mnist.train.labels, dtype=np.int32)
+# eval_data = mnist.test.images  # Ret
+# # urns np.array
+# eval_labels = np.asarray(mnist.test.labels, dtype=np.int32)
+
+
 
 # 每个批次的大小
 batch_size = 100
 # 计算一共有多少个批次
 n_batch = mnist.train.num_examples // batch_size
+
+
 
 
 # 初始化权值
@@ -64,33 +77,34 @@ h_pool2 = max_pool_2x2(h_conv2)  # 进行max-pooling
 # 进过上面操作后得到64张7*7的平面
 
 # 初始化第一个全连接层的权值
-W_fc1 = weight_variable([7 * 7 * 64, 1024])  # 上一层有7*7*64个神经元，全连接层有1024个神经元
-b_fc1 = bias_variable([1024])  # 1024个节点
+W_fc1 = weight_variable([7 * 7 * 64, 784])  # 上一层有7*7*64个神经元，全连接层有1024个神经元
+b_fc1 = bias_variable([784])  # 1024个节点
 
 # 把池化层2的输出扁平化为1维
 h_pool2_flat = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
 # 求第一个全连接层的输出
 h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
 
-W_fc2 = weight_variable([1024, 2048])
-b_fc2 = bias_variable(2048)
-
-h_fc2 = tf.nn.relu(tf.matmul(h_fc1, W_fc2)+b_fc2)
+# W_fc2 = weight_variable([10 * 10 * 85, 90])
+# b_fc2 = bias_variable([90])
+#
+# h_pool3_flat = tf.reshape(h_pool2, [-1, 10 * 10 * 85])
+# h_fc2 = tf.nn.relu(tf.matmul(h_pool3_flat, W_fc2)+b_fc2)
 
 
 
 # keep_prob用来表示神经元的输出概率
 keep_prob = tf.placeholder(tf.float32)
-h_fc1_drop = tf.nn.dropout(h_fc2, keep_prob)
+h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
 
-
+logits = tf.layers.dense(h_fc1_drop, units=10)
 
 # 初始化第二个全连接层
-W_fc3 = weight_variable([2048, 10])
-b_fc3 = bias_variable([10])
+# W_fc3 = weight_variable([10 * 10 * 90, 10])
+# b_fc3 = bias_variable([10])
 
 # 计算输出
-prediction = tf.nn.softmax(tf.matmul(h_fc1_drop, W_fc3) + b_fc3)
+prediction = tf.nn.softmax(logits)
 
 # 交叉熵代价函数(log_loss)
 cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=prediction))
@@ -112,4 +126,15 @@ with tf.Session() as sess:
             sess.run(train_step, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 0.7})
 
         acc = sess.run(accuracy, feed_dict={x: mnist.test.images, y: mnist.test.labels, keep_prob: 1.0})
-        print("Iter " + str(epoch) + ", Testing Accuracy= " + str(acc) + ", loss= " + train_step)
+        print("Iter ", str(epoch), ", Testing Accuracy= ", str(acc), ", loss= ", train_step)
+
+saver = tf.train.Saver()
+
+with tf.Session() as sess:
+
+    sess.run(accuracy)
+    # Do some work with the model.
+
+    # Save the variables to disk.
+    save_path = saver.save(sess, "/tmp/train_model.ckpt")
+    print("Model saved in path: %s" % save_path)
