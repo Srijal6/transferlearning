@@ -119,8 +119,9 @@ correct_prediction = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))  # argm
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
-    for epoch in range(21):
+    init_op = tf.global_variables_initializer()
+    sess.run(init_op)
+    for epoch in range(1):
         for batch in range(n_batch):
             batch_xs, batch_ys = mnist.train.next_batch(batch_size)
             sess.run(train_step, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 0.7})
@@ -132,7 +133,8 @@ saver = tf.train.Saver()
 
 with tf.Session() as sess:
 
-    sess.run(accuracy)
+    sess.run(init_op)
+    
     # Do some work with the model.
 
     # Save the variables to disk.
