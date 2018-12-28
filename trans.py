@@ -78,37 +78,32 @@ h_pool2 = max_pool_2x2(h_conv2)  # 进行max-pooling
 # 28*28的图片第一次卷积后还是28*28（数组变小了，但是图像大小不变），第一次池化后变为14*14
 # 第二次卷积后为14*14（卷积不会改变平面的大小），第二次池化后变为了7*7
 # 进过上面操作后得到64张7*7的平面
-def f1():
 
 # 初始化第一个全连接层的权值
-    W_fc1 = weight_variable([7 * 7 * 64, 784])  # 上一层有7*7*64个神经元，全连接层有1024个神经元
-    b_fc1 = bias_variable([784])  # 1024个节点
+W_fc1 = weight_variable([7 * 7 * 64, 784])  # 上一层有7*7*64个神经元，全连接层有1024个神经元
+b_fc1 = bias_variable([784])  # 1024个节点
 
 # 把池化层2的输出扁平化为1维
-    h_pool2_flat = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
+h_pool2_flat = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
 # 求第一个全连接层的输出
-    h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
-    v = tf.Variable(True)
+h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
+v = tf.Variable(True)
 # tf.cond(v, lambda: v.assign(w_fc1, b_fc1), h_fc1)
 # W_fc2 = weight_variable([10 * 10 * 85, 90])
 # b_fc2 = bias_variable([90])
-    return (h_fc1)
-def f2():
 # h_pool3_flat = tf.reshape(h_pool2, [-1, 10 * 10 * 85])
 # h_fc2 = tf.nn.relu(tf.matmul(h_pool3_flat, W_fc2)+b_fc2)
-    W_fc2 = weight_variable([7 * 7 * 64, 784])  # 上一层有7*7*64个神经元，全连接层有1024个神经元
-    b_fc2 = bias_variable([784])  # 1024个节点
+W_fc2 = weight_variable([7 * 7 * 64, 784])  # 上一层有7*7*64个神经元，全连接层有1024个神经元
+b_fc2 = bias_variable([784])  # 1024个节点
 
 # 把池化层2的输出扁平化为1维
-    h_pool2_flat1 = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
+h_pool2_flat1 = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
 # 求第一个全连接层的输出
-    h_fc2 = tf.nn.relu(tf.matmul(h_pool2_flat1, W_fc2) + b_fc2)
-    v = tf.Variable(True)
+h_fc2 = tf.nn.relu(tf.matmul(h_pool2_flat1, W_fc2) + b_fc2)
+v = tf.Variable(True)
 # def f1(): return (h_fc1)
 # def f2(): return (h_fc2)
-    return (h_fc2)
 
-    r = tf.cond(v, lambda: v.assign(w_fc1, b_fc1), h_fc1, h_fc2)
 
 
 
@@ -139,7 +134,8 @@ correct_prediction = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))  # argm
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
+    init_op = tf.global_variables_initializer()
+    sess.run(init_op)
     for epoch in range(21):
         for batch in range(n_batch):
             batch_xs, batch_ys = mnist.train.next_batch(batch_size)
@@ -152,7 +148,7 @@ saver = tf.train.Saver()
 
 with tf.Session() as sess:
 
-    sess.run(accuracy)
+    sess.run(init_op)
     # Do some work with the model.
 
     # Save the variables to disk.
