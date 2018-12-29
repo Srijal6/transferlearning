@@ -3,36 +3,22 @@ from tensorflow.examples.tutorials.mnist import input_data
 import numpy as np
 import MNIST_data
 
-# tf.logging.set_verbosity(tf.logging.INFO)
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
-# # mnist = tf.contrib.learn.datasets.load_dataset("mnist")
-# train_data = mnist.train.images  # Returns np.array
-# train_labels = np.asarray(mnist.train.labels, dtype=np.int32)
-# eval_data = mnist.test.images  # Ret
-# # urns np.array
-# eval_labels = np.asarray(mnist.test.labels, dtype=np.int32)
-
-
 
 # 每个批次的大小
 batch_size = 100
 # 计算一共有多少个批次
 n_batch = mnist.train.num_examples // batch_size
 
-
-
-
 # 初始化权值
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)  # 生成一个截断的正态分布
     return tf.Variable(initial)
 
-
 # 初始化偏置
 def bias_variable(shape):
     initial = tf.constant(0.1, shape=shape)
     return tf.Variable(initial)
-
 
 # 卷积层
 def conv2d(x, W):
@@ -47,7 +33,6 @@ def conv2d(x, W):
 def max_pool_2x2(x):
     # ksize [1,x,y,1]
     return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-
 
 # 定义两个placeholder
 x = tf.placeholder(tf.float32, [None, 784])  # 28*28
@@ -85,23 +70,11 @@ h_pool2_flat = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
 # 求第一个全连接层的输出
 h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
 
-# W_fc2 = weight_variable([10 * 10 * 85, 90])
-# b_fc2 = bias_variable([90])
-#
-# h_pool3_flat = tf.reshape(h_pool2, [-1, 10 * 10 * 85])
-# h_fc2 = tf.nn.relu(tf.matmul(h_pool3_flat, W_fc2)+b_fc2)
-
-
-
 # keep_prob用来表示神经元的输出概率
 keep_prob = tf.placeholder(tf.float32)
 h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
 
 logits = tf.layers.dense(h_fc1_drop, units=10)
-
-# 初始化第二个全连接层
-# W_fc3 = weight_variable([10 * 10 * 90, 10])
-# b_fc3 = bias_variable([10])
 
 # 计算输出
 prediction = tf.nn.softmax(logits)
@@ -118,25 +91,28 @@ correct_prediction = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))  # argm
 # 求准确率
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-with tf.Session() as sess:
-    init_op = tf.global_variables_initializer()
-    sess.run(init_op)
-    for epoch in range(1):
-        for batch in range(n_batch):
-            batch_xs, batch_ys = mnist.train.next_batch(batch_size)
-            sess.run(train_step, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 0.7})
+variables_dict = {'b_conv2': b_conv2, 'W_fc1': W_fc1, 'W_conv1': W_conv1, 'b_fc1': b_fc1, 'b_conv1': b_conv1, 'W_conv2': W_conv2}
+# return output,variables_dict
+with tf.device('/cpu:0'):
+    saver = tf.train.Saver(variables_dict)
+    with tf.Session() as sess:
 
-        acc = sess.run(accuracy, feed_dict={x: mnist.test.images, y: mnist.test.labels, keep_prob: 1.0})
-        print("Iter ", str(epoch), ", Testing Accuracy= ", str(acc), ", loss= ", train_step)
+        init_op = tf.global_variables_initializer()
+        sess.run(init_op)
+        ckpt = tf.train.get_checkpoint_state('model/')
+        for epoch in range(1):
+            for batch in range(n_batch):
+                batch_xs, batch_ys = mnist.train.next_batch(batch_size)
+                sess.run(train_step, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 0.7})
 
-saver = tf.train.Saver()
+            acc = sess.run(accuracy, feed_dict={x: mnist.test.images, y: mnist.test.labels, keep_prob: 1.0})
+            print("Iter ", str(epoch), ", Testing Accuracy= ", str(acc), ", loss= ", train_step)
 
-with tf.Session() as sess:
+    saver = tf.train.Saver()
 
-    sess.run(init_op)
-    
-    # Do some work with the model.
+    with tf.Session() as sess:
 
-    # Save the variables to disk.
-    save_path = saver.save(sess, "/tmp/train_model.ckpt")
-    print("Model saved in path: %s" % save_path)
+        sess.run(init_op)
+
+        save_path = saver.save(sess, "/tmp/train_model.ckpt")
+        print("Model saved in path: %s" % save_path)
