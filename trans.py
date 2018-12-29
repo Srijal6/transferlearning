@@ -1,22 +1,7 @@
 import tensorflow as tf
-import mmd
-
-def load_pretrain(model):
-    # tf.reset_default_graph()
-    # Add ops to save and restore all the variables.
-    saver = tf.train.Saver()
-    # Later, launch the model, use the saver to restore variables from disk, and
-    # do some work with the model.
-    with tf.Session() as sess:
-        # Restore variables from disk.
-        saver.restore(sess, "/tmp/train_model.ckpt")
-        print("Model restored.")
-
-
-# import tensorflow as tf
+from mmd import mmd2_rbf
 from tensorflow.examples.tutorials.mnist import input_data
-#
-#
+
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
 # 每个批次的大小
@@ -78,6 +63,7 @@ h_pool2 = max_pool_2x2(h_conv2)  # 进行max-pooling
 # 28*28的图片第一次卷积后还是28*28（数组变小了，但是图像大小不变），第一次池化后变为14*14
 # 第二次卷积后为14*14（卷积不会改变平面的大小），第二次池化后变为了7*7
 # 进过上面操作后得到64张7*7的平面
+# def f1():
 
 # 初始化第一个全连接层的权值
 W_fc1 = weight_variable([7 * 7 * 64, 784])  # 上一层有7*7*64个神经元，全连接层有1024个神经元
@@ -87,12 +73,7 @@ b_fc1 = bias_variable([784])  # 1024个节点
 h_pool2_flat = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
 # 求第一个全连接层的输出
 h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
-v = tf.Variable(True)
-# tf.cond(v, lambda: v.assign(w_fc1, b_fc1), h_fc1)
-# W_fc2 = weight_variable([10 * 10 * 85, 90])
-# b_fc2 = bias_variable([90])
-# h_pool3_flat = tf.reshape(h_pool2, [-1, 10 * 10 * 85])
-# h_fc2 = tf.nn.relu(tf.matmul(h_pool3_flat, W_fc2)+b_fc2)
+
 W_fc2 = weight_variable([7 * 7 * 64, 784])  # 上一层有7*7*64个神经元，全连接层有1024个神经元
 b_fc2 = bias_variable([784])  # 1024个节点
 
@@ -100,12 +81,6 @@ b_fc2 = bias_variable([784])  # 1024个节点
 h_pool2_flat1 = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
 # 求第一个全连接层的输出
 h_fc2 = tf.nn.relu(tf.matmul(h_pool2_flat1, W_fc2) + b_fc2)
-v = tf.Variable(True)
-# def f1(): return (h_fc1)
-# def f2(): return (h_fc2)
-
-
-
 
 # keep_prob用来表示神经元的输出概率
 keep_prob = tf.placeholder(tf.float32)
@@ -113,18 +88,15 @@ h_fc1_drop = tf.nn.dropout(h_fc2, keep_prob)
 
 logits = tf.layers.dense(h_fc1_drop, units=10)
 
-# 初始化第二个全连接层
-# W_fc3 = weight_variable([10 * 10 * 90, 10])
-# b_fc3 = bias_variable([10])
-
 # 计算输出
 prediction = tf.nn.softmax(logits)
 
 # 交叉熵代价函数(log_loss)
 cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=prediction))
 gamma = 1
-loss_mmd = (cross_entropy + gamma * mmd)
-# 使用AdamOptimizer进行优化
+mmd2_rbf(x, 0.99, 0.2, 1)
+loss_mmd = (cross_entropy + gamma * mmd2_rbf)
+# 使用AdamOptimizer进行优
 train_step = tf.train.AdamOptimizer(1e-4).minimize(loss_mmd)
 
 # 结果存放在一个布尔列表中
@@ -132,26 +104,64 @@ correct_prediction = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))  # argm
 
 # 求准确率
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+variables_dict = {'b_conv2': b_conv2, 'W_fc2': W_fc2, 'W_conv1': W_conv1, 'b_fc2': b_fc2, 'b_conv1': b_conv1, 'W_conv2': W_conv2}
+
+
+with tf.device('/cpu:0'):
+    saver = tf.train.Saver(variables_dict)
+    with tf.Session(config=tf.ConfigProto(device_count={'cpu': 0})) as sess:
+        sess.run(tf.global_variables_initializer())
+        step = 0
+
+        ckpt = tf.train.get_checkpoint_state('model/')
+        if ckpt and ckpt.model_checkpoint_path:
+            restore = saver.restore(sess, ckpt.model_checkpoint_path)
+            step = int(ckpt.model_checkpoint_path.rsplit('-', 1)[1])
+            print("true, model restored")
+        else:
+
+            print("false, Model restored.")
 
 with tf.Session() as sess:
     init_op = tf.global_variables_initializer()
     sess.run(init_op)
-    for epoch in range(21):
+    for epoch in range(1):
         for batch in range(n_batch):
             batch_xs, batch_ys = mnist.train.next_batch(batch_size)
             sess.run(train_step, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 0.7})
 
         acc = sess.run(accuracy, feed_dict={x: mnist.test.images, y: mnist.test.labels, keep_prob: 1.0})
-        print("Iter " + str(epoch) + ", Testing Accuracy= " + str(acc) + ", loss= " + train_step)
+        print("Iter ", str(epoch), ", Testing Accuracy= ", str(acc), ", loss= ", train_step)
 
 saver = tf.train.Saver()
 
 with tf.Session() as sess:
-
     sess.run(init_op)
+    # saver.restore(sess, "/tmp/train_model/train_model.ckpt")
+    # # sess.run(tf.variables_initializer(var_list=train_var))
+    # #
+    # #     saver = tf.train.Saver(var_list)
+    # #
+    # #     print("Model restored.")
+
+
     # Do some work with the model.
 
     # Save the variables to disk.
     save_path = saver.save(sess, "/tmp/train_model.ckpt")
     print("Model saved in path: %s" % save_path)
 
+# tf.reset_default_graph()
+# # Add ops to save and restore all the variables.
+# _ = tf.Variable(initial_value='fake_variable')
+# saver = tf.train.Saver()
+#     # Later, launch the model, use the saver to restore variables from disk, and
+#     # do some work with the model.
+# with tf.Session() as sess:
+#         # Restore variables from disk.
+#     saver.restore(sess, "/tmp/train_model/train_model.ckpt")
+#     sess.run(tf.variables_initializer(var_list=train_var))
+#
+#     saver = tf.train.Saver(var_list)
+#
+#     print("Model restored.")
